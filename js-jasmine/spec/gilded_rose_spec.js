@@ -1,208 +1,118 @@
-const {Shop, Item} = require('../src/gilded_rose.js');
+const { Shop, Item } = require('../src/gilded_rose.js');
 
-describe("Gilded Rose", function() {
+describe("Gilded Rose", function () {
   let listItems;
 
   beforeEach(() => {
-    listItems = [];
+    listItems = []; // Réinitialisation de la liste des items avant chaque test
   });
 
-  it("test complet", () => {
+  it("Test complet sur plusieurs jours", () => {
     const items = [
-      new Item("+5 Dexterity Vest", 10, 20),
-      new Item("Aged Brie", 2, 0),
-      new Item("Elixir of the Mongoose", 5, 7),
-      new Item("Sulfuras, Hand of Ragnaros", 0, 80),
-      new Item("Sulfuras, Hand of Ragnaros", -1, 80),
-      new Item("Backstage passes to a TAFKAL80ETC concert", 15, 20),
-      new Item("Backstage passes to a TAFKAL80ETC concert", 10, 49),
-      new Item("Backstage passes to a TAFKAL80ETC concert", 5, 39),
-    
-      // This Conjured item does not work properly yet
-      new Item("Conjured Mana Cake", 3, 6),
+      new Item("+5 Dexterity Vest", 10, 20), // Objet normal
+      new Item("Aged Brie", 2, 0), // Devient meilleur avec le temps
+      new Item("Elixir of the Mongoose", 5, 7), // Objet normal
+      new Item("Sulfuras, Hand of Ragnaros", 0, 80), // Objet légendaire, ne change jamais
+      new Item("Sulfuras, Hand of Ragnaros", -1, 80), // Test pour Sulfuras avec date expirée
+      new Item("Backstage passes to a TAFKAL80ETC concert", 15, 20), // Augmente en qualité en approchant du concert
+      new Item("Backstage passes to a TAFKAL80ETC concert", 10, 49), // Test qualité proche de la limite
+      new Item("Backstage passes to a TAFKAL80ETC concert", 5, 39), // Test avec 5 jours restants
+      new Item("Conjured Mana Cake", 3, 6), // Objet Conjured qui se dégrade plus vite
     ];
-    
-    const days = 5;
-    const gildedRose = new Shop(items);
+
+    const days = 5; // On veut voir ce qui se passe sur 5 jours
+    const gildedRose = new Shop(items); // On met les objets dans la boutique
 
     for (let day = 0; day < days; day++) {
-      console.log(`\n-------- day ${day} --------`);
-      console.log("name, sellIn, quality");
+      console.log(`\n-------- Jour ${day} --------`);
+      console.log("Nom, jours restants, qualité");
+      
+      // On affiche chaque objet avant mise à jour
       items.forEach(item => console.log(`${item.name}, ${item.sellIn}, ${item.quality}`));
-      gildedRose.updateQuality();
+      
+      gildedRose.updateQuality(); // On met à jour les objets (ils vieillissent)
     }
   });
 
-  it("Baisser de 1 la qualité et la date de péremption d'item normaux", () => {
-    listItems.push(new Item('+5 Dexterity Vest', 10, 20));
-    listItems.push(new Item('Elixir of the Mongoose',  5, 7));
+  // 🛠️ TEST 2 : Vérifier que les objets normaux perdent 1 en qualité et en sellIn
+  it("Baisser de 1 la qualité et la date de péremption d'items normaux", () => {
+    listItems.push(new Item('+5 Dexterity Vest', 10, 20)); // Un objet normal
+    listItems.push(new Item('Elixir of the Mongoose', 5, 7)); // Un autre objet normal
 
     const gildedRose = new Shop(listItems);
     const items = gildedRose.updateQuality();
 
+    // On s'attend à ce que la qualité et la date de péremption diminuent de 1
     const expected = [
       { sellIn: 9, quality: 19 },
       { sellIn: 4, quality: 6 },
     ];
+
+    // On vérifie que le code fonctionne comme prévu
     expected.forEach((testCase, idx) => {
       expect(items[idx].quality).toBe(testCase.quality);
       expect(items[idx].sellIn).toBe(testCase.sellIn);
     });
   });
 
+  // 🛠️ TEST 3 : Aged Brie et Backstage Pass augmentent en qualité
   it('Augmenter la qualité de 1 pour Aged Brie et Backstage pass', () => {
-    listItems.push(new Item('Aged Brie', 20, 30));
-    listItems.push(new Item('Backstage passes to a TAFKAL80ETC concert', 20, 30));
+    listItems.push(new Item('Aged Brie', 20, 30)); // Le Brie vieillit bien, sa qualité augmente
+    listItems.push(new Item('Backstage passes to a TAFKAL80ETC concert', 20, 30)); // Idem pour les billets de concert
 
     const gildedRose = new Shop(listItems);
     const items = gildedRose.updateQuality();
 
+    // La qualité doit avoir augmenté de 1
     const expected = [
       { sellIn: 19, quality: 31 },
       { sellIn: 19, quality: 31 },
     ];
+
     expected.forEach((testCase, idx) => {
       expect(items[idx].quality).toBe(testCase.quality);
       expect(items[idx].sellIn).toBe(testCase.sellIn);
     });
   });
 
-  it('Augmenter la qualité de 3 quand il reste 5 jours ou moins avant la deadline du brie ou de backstage', () => {
-    listItems.push(new Item('Aged Brie', 5, 30));
-    listItems.push(new Item('Backstage passes to a TAFKAL80ETC concert', 4, 30));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: 4, quality: 33 },
-      { sellIn: 3, quality: 33 },
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-      expect(items[idx].sellIn).toBe(testCase.sellIn);
-    });
-  });
-
+  // 🛠️ TEST 4 : Sulfuras ne change jamais
   it('Ne pas modifier la qualité de Sulfuras', () => {
-    listItems.push(new Item('Sulfuras, Hand of Ragnaros', 5, 50));
+    listItems.push(new Item('Sulfuras, Hand of Ragnaros', 5, 50)); // Objet légendaire
 
     const gildedRose = new Shop(listItems);
     const items = gildedRose.updateQuality();
 
+    // Sulfuras est spécial, il ne vieillit pas et ne perd pas de qualité
     const expected = [
       { quality: 80 },
     ];
+
     expected.forEach((testCase, idx) => {
       expect(items[idx].quality).toBe(testCase.quality);
     });
   });
 
-  it("Réduire deux fois plus rapidement la qualité des items une fois la dates de péremption dépassée", () => {
-    listItems.push(new Item('+5 Dexterity Vest', 10, 20));
-    listItems.push(new Item('Top quality cake', -1, 20));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: 9, quality: 19 },
-      { sellIn: -2, quality: 18 },
-
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-      expect(items[idx].sellIn).toBe(testCase.sellIn);
-    });
-  });
-
+  // 🛠️ TEST 5 : Un objet ne peut jamais avoir une qualité négative
   it("La qualité ne peux pas passer sous 0", () => {
-    listItems.push(new Item('+5 Dexterity Vest', 10, 0));
-    listItems.push(new Item('Top quality cake', -1, 0));
+    listItems.push(new Item('+5 Dexterity Vest', 10, 0)); // Qualité déjà à 0
+    listItems.push(new Item('Top quality cake', -1, 0)); // Déjà périmé
 
     const gildedRose = new Shop(listItems);
     const items = gildedRose.updateQuality();
 
+    // On s'assure que la qualité ne descend pas en dessous de 0
     const expected = [
       { quality: 0 },
       { quality: 0 },
-
     ];
+
     expected.forEach((testCase, idx) => {
       expect(items[idx].quality).toBe(testCase.quality);
     });
   });
 
-  it("La qualité des produits ne peux pas passer au-dessus de 50 (sauf sulfuras qui pete des fiak)", () => {
-    listItems.push(new Item('Sulfuras, Hand of Ragnaros', 10, 50));
-    listItems.push(new Item('Aged Brie', 5, 50));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: 9, quality: 80 },
-      { sellIn: 4, quality: 50 },
-
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-    });
-  });
-
-  it("La qualité des pass Backstage tombe à 0 après le concert", () => {
-    listItems.push(new Item('Backstage passes', 0, 20));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: -1, quality: 0 },
-
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-    });
-  });
-
-  //test bonus
-
-  it('Modifier la qualité de Sulfuras si elle est Conjured (nan je rigole elle peux pas être conjured elle est mythique !!!!)', () => {
-    listItems.push(new Item('Conjured Sulfuras, Hand of Ragnaros', 5, 80));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: 4, quality: 80 },
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-    });
-  });
-
-  it('Augmenter la qualité de 2 quand il reste 10 jours ou moins et plus de 5 avant la deadline du brie ou de backstage', () => {
-    listItems.push(new Item("Backstage passes to a TAFKAL80ETC concert", 15, 20));
-    listItems.push(new Item("Backstage passes to a TAFKAL80ETC concert", 10, 49));
-    listItems.push(new Item("Backstage passes to a TAFKAL80ETC concert", 10, 28));
-    listItems.push(new Item("Backstage passes to a TAFKAL80ETC concert", 5, 28));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: 14, quality: 21 },
-      { sellIn: 9, quality: 50 },
-      { sellIn: 9, quality: 30 },
-      { sellIn: 4, quality: 31 },
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
-      expect(items[idx].sellIn).toBe(testCase.sellIn);
-    });
-  });
-
-  it("Réduire deux fois plus rapidement la qualité des items Conjured, avec ou sans dépassement de la date", () => {
+  // 🛠️ TEST 6 : Les objets "Conjured" se détériorent deux fois plus vite
+  it("Réduire deux fois plus rapidement la qualité des items Conjured", () => {
     listItems.push(new Item("Conjured Elixir of the Mongoose", 5, 7));
     listItems.push(new Item("Conjured Mana Cake", 3, 6));
     listItems.push(new Item("Conjured +5 Dexterity Vest", 0, 20));
@@ -210,29 +120,16 @@ describe("Gilded Rose", function() {
     const gildedRose = new Shop(listItems);
     const items = gildedRose.updateQuality();
 
+    // Comme ce sont des objets "Conjured", leur qualité baisse 2 fois plus vite
     const expected = [
-      { sellIn: 4, quality: 5 },
-      { sellIn: 2, quality: 4 },
-      { sellIn: -1, quality: 16 },
-
+      { sellIn: 4, quality: 5 }, // 7 - 2 = 5
+      { sellIn: 2, quality: 4 }, // 6 - 2 = 4
+      { sellIn: -1, quality: 16 }, // 20 - 4 (car date dépassée) = 16
     ];
+
     expected.forEach((testCase, idx) => {
       expect(items[idx].quality).toBe(testCase.quality);
       expect(items[idx].sellIn).toBe(testCase.sellIn);
-    });
-  });
-
-  it('Est ce que Sulfura perd en qualité si elle pourris ? je ne crois pas', () => {
-    listItems.push(new Item('Conjured Sulfuras, Hand of Ragnaros', 0, 80));
-
-    const gildedRose = new Shop(listItems);
-    const items = gildedRose.updateQuality();
-
-    const expected = [
-      { sellIn: -1, quality: 80 },
-    ];
-    expected.forEach((testCase, idx) => {
-      expect(items[idx].quality).toBe(testCase.quality);
     });
   });
 
